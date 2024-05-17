@@ -1,0 +1,91 @@
+2.1 multiproccesing
+import multiprocessing
+
+def calcular_cuadrados(nums, resultado, indice_inicio, indice_fin):
+    for i in range(indice_inicio, indice_fin):
+        resultado[i] = nums[i] ** 2
+
+if __name__ == "__main__":
+    nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    resultado = multiprocessing.Array('i', len(nums))
+    procesos = []
+
+    for i in range(4):  # Suponiendo 4 núcleos de CPU
+        inicio = i * len(nums) // 4
+        fin = (i + 1) * len(nums) // 4
+        proceso = multiprocessing.Process(target=calcular_cuadrados, args=(nums, resultado, inicio, fin))
+        procesos.append(proceso)
+        proceso.start()
+
+    for proceso in procesos:
+        proceso.join()
+
+    print("Lista original:", nums)
+    print("Lista con cuadrados calculados:", list(resultado))
+
+segunda parte
+import multiprocessing
+
+def calcular_cuadrados(subrango, resultados):
+    cuadrados = [num ** 2 for num in subrango]
+    resultados.put(cuadrados)
+
+def main(rango, num_procesos):
+    resultados = multiprocessing.Queue()
+    subrangos = [rango[i::num_procesos] for i in range(num_procesos)]
+    procesos = []
+
+    for subrango in subrangos:
+        proceso = multiprocessing.Process(target=calcular_cuadrados, args=(subrango, resultados))
+        proceso.start()
+        procesos.append(proceso)
+
+    for proceso in procesos:
+        proceso.join()
+
+    resultados_final = []
+    while not resultados.empty():
+        resultados_final.extend(resultados.get())
+
+    return resultados_final
+
+if __name__ == "__main__":
+    rango = range(1, 11)
+    num_procesos = 4
+    resultados = main(rango, num_procesos)
+    print("Cuadrados:", resultados)
+
+
+2.2 Uso de Threads para Concurrencia
+import threading
+import requests
+
+def descargar_archivo(url, nombre_archivo):
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(nombre_archivo, 'wb') as archivo:
+            archivo.write(response.content)
+        print(f"Archivo {nombre_archivo} descargado con éxito.")
+    else:
+        print(f"Error al descargar archivo {nombre_archivo}.")
+
+if __name__ == "__main__":
+    urls = [
+        "https://example.com/file1.txt",
+        "https://example.com/file2.txt",
+        "https://example.com/file3.txt"
+    ]
+    nombres_archivos = ["file1.txt", "file2.txt", "file3.txt"]
+    threads = []
+
+    for url, nombre_archivo in zip(urls, nombres_archivos):
+        thread = threading.Thread(target=descargar_archivo, args=(url, nombre_archivo))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    print("Todos los archivos han sido descargados.")
+
+
